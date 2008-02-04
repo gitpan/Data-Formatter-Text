@@ -1,0 +1,6 @@
+Changes
+Makefile.PL
+manifest
+readme
+t/Data-Formatter-Text.t
+lib/Data/Formatter/Text.pm

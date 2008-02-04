@@ -1,0 +1,6 @@
+Revision history for Perl extension Data::Formatter::Text.
+
+0.01  Sun Jan 27 17:12:45 2008
+	- original version; created by h2xs 1.23 with options
+		-AX Data::Formatter::Text
+
