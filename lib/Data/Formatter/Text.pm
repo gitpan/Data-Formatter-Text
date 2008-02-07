@@ -1,18 +1,20 @@
 package Data::Formatter::Text;
 use strict;
 use warnings;
+
+use List::Util qw(max);
 use Roman;
 
-our $VERSION = 0.1;
+our $VERSION = 0.2;
 use base qw(Data::Formatter);
 
 ######################################
 # Constants                          #
 ######################################
-use constant HEADING_WIDTH => 50;
-use constant MAX_TEXT_WIDTH => 60;
-my @BULLETS;
-BEGIN {@BULLETS = ('*', '-', '~');}
+our $HEADING_WIDTH      = 50;    # 50 chars is just an arbitrary default
+our @BULLETS            = ('*', '-', '~');
+our $COLUMN_SEPARATOR   = '|';
+our $ROW_SEPARATOR      = '-';
 
 ######################################
 # Overriden Public Methods           #
@@ -22,7 +24,7 @@ sub heading
     my ($self, $text) = @_;
     
     # Headers are centered, all caps, and enclosed in a wide thick box
-    return _box('#', '=', _centreAlign(uc($text), HEADING_WIDTH));
+    return _box('#', '=', _centreAlign(uc($text), $HEADING_WIDTH));
 }
 
 sub emphasized 
@@ -53,8 +55,6 @@ sub _text
 sub _table 
 {
     my ($self, $rows, %options) = @_;
-    my $border = defined $options{'border'} ? $options{'border'} : 1;
-    my $colSep = $border ? '|' : '   ';
     
     # Determine the dimensions of the table
     my @rowHeights;
@@ -71,8 +71,7 @@ sub _table
             }
             
             # Get the width of the cell in characters
-            my $cellWidth = (sort {$a <=> $b} (map(length($_), @cellContents)))[$#cellContents];
-            
+            my $cellWidth = max(map {length} @cellContents) || 0;
             if (!defined $colWidths[$colNum] || $cellWidth > $colWidths[$colNum])
             {
                 $colWidths[$colNum] = $cellWidth;
@@ -82,12 +81,7 @@ sub _table
     }
     
     # Generate a row separation line
-    my @colDashes;
-    foreach my $colWidth (@colWidths)
-    {
-        push(@colDashes, '-' x $colWidth);
-    }
-    my $rowSepLine = join('|', @colDashes);
+    my $rowSepLine = join($COLUMN_SEPARATOR,  map { $ROW_SEPARATOR x $_ } @colWidths);
     
     # Output the table
     my @buffer;
@@ -96,12 +90,7 @@ sub _table
         my $row = $rows->[$rowIdx];
         
         # Get an array of all the cells in this row
-        my @columns;
-        foreach my $col (@{$row})
-        {
-            my @e = $self->_formatCell($col);
-            push(@columns, \@e);
-        }
+        my @columns = map { [$self->_formatCell($_)] } @{$row};
        
         # Create an array of lines that constitute this row
         my @rowBuffer;
@@ -121,76 +110,68 @@ sub _table
                     push(@parallelLines, _leftAlign('', $colWidths[$colNum]));
                 }
             }
-            push(@rowBuffer, join($colSep, @parallelLines));
+            push(@rowBuffer, join($COLUMN_SEPARATOR, @parallelLines));
         }
         push(@buffer, @rowBuffer);
         
-        if ($border && $rowIdx != $#{$rows})
+        if ($rowIdx != $#{$rows})
         {
             push(@buffer, $rowSepLine);
         }
     }
     
-    if ($border)
-    {
-        @buffer = _box('|', '-', @buffer);
-    }
+    # Draw a border around the table
+    @buffer = _box($COLUMN_SEPARATOR, $ROW_SEPARATOR, @buffer);
     
     return @buffer;
 }
 
-sub _list 
+sub _list
 {
     my ($self, $list, %options) = @_;
     my $listType = $options{listType} || 'UNORDERED';
     my $bulletTypeIdx = $options{bulletType} || 0;
     my $numTypeIdx = $options{numberType} || 0;
-    
+
+    # Determine the type of bullet or number we will use
+    my $point;
+    if ($listType eq 'ORDERED')
+    {
+        $options{numberType} = $numTypeIdx + 1;
+    }
+    else
+    {   
+        $point = @BULLETS[$bulletTypeIdx % @BULLETS];
+        $options{bulletType} = $bulletTypeIdx + 1;
+    }
+
     my @buffer = ();
     foreach my $elementIdx (0 .. $#{$list})
     {
         my $element = $list->[$elementIdx];
-        
-        my $point;
+
+        # Alternate between latin and roman numbering for ordered lists        
         if ($listType eq 'ORDERED')
         {
-            if ($numTypeIdx % 2)
-            {
-                $point = roman($elementIdx + 1) . '.';
-            }
-            else
-            {
-                $point = ($elementIdx + 1) . '.';
-            }
-            
-            $options{numberType} = $numTypeIdx + 1;
-        }
-        else
-        {
-            $point = @BULLETS[$bulletTypeIdx % @BULLETS];
-            $options{bulletType} = $bulletTypeIdx + 1;
+            $point = $numTypeIdx % 2 
+                ? roman($elementIdx + 1) . '.'
+                : ($elementIdx + 1) . '.';
         }
         
-        # Nested bulleted lists are treated differently
         my $prefix = "$point  ";
+        my @elementLines = $self->_format($element, %options);
+
+        # Nested lists are not printed "inside" a list element, or
+        # it would look weird. Hence, a nested list is not prefixed
+        # by a bullet or a number.         
         if ($self->_getStructType($element) =~ /\w+_LIST/)
-        {
-            my @elementLines = $self->_format($element, %options);
-            
-            foreach my $line (@elementLines)
-            {
-                push(@buffer, ' ' x length($prefix) . $line);
-            }
+        {            
+            push(@buffer, map { ' ' x length($prefix) . $_ } @elementLines);
         }
         else
-        {
-            my @elementLines = $self->_format($element);
-            
-            push(@buffer, "$prefix$elementLines[0]");
-            foreach my $i (1 .. $#elementLines)
-            {
-                push(@buffer, ' ' x length($prefix) . $elementLines[$i]);
-            }
+        {   
+            push(@buffer, "$prefix$elementLines[0]",
+                map { ' ' x length($prefix) . $_ } @elementLines[1 .. $#elementLines]);
         }
     }
     return @buffer;
@@ -219,8 +200,8 @@ sub _definitionList
     # Output the pairs in alphabetical order with respect to the key
     my @keys = sort (keys %{$pairs});
     
-    # Determine the max length of a key to perform some nice spacing.
-    my $maxKeyLength = (sort {$a <=> $b} (map(length($_), @keys)))[$#keys];
+    # Determine the max length of a key to perform some nice indenting.
+    my $maxKeyLength = max(map {length} @keys);
     
     foreach my $key (@keys)
     {
@@ -231,32 +212,28 @@ sub _definitionList
         # Tables go below and are indented a constant 4 spaces
         if ($structType eq 'TABLE')
         {
-            push(@buffer, "$key:");
-            foreach my $line (@valueLines)
-            {
-                push(@buffer, "    $line");
-            }
+            push(@buffer, 
+                "$key:",
+                map {"    $_"} @valueLines);
         }
-        # Text goes on the same line as the definition
+        # The first line of text goes on the same line as the definition and subsequent
+        # lines are indented by the maximum key length
         elsif ($structType eq 'TEXT')
         {
-            push(@buffer, "$key:" . ' ' x ($maxKeyLength - length($key) + 1) .  $valueLines[0]);
-            foreach my $i (1 .. $#valueLines)
-            {
-                push(@buffer, ' ' x ($maxKeyLength + 2) . "  $valueLines[$i]");
-            }
+            push(@buffer, 
+                "$key:" . ' ' x ($maxKeyLength - length($key) + 1) .  $valueLines[0],
+                map {' ' x ($maxKeyLength + 2) . "  $_"} @valueLines[1..$#valueLines] );
         }
-        # Everything else but text goes on the following line and is indented
+        # Everything else but text and tables goes on the following line and is indented
         # to line up with the end of the key
         else
         {
-            push(@buffer, "$key:");
-            foreach my $line (@valueLines)
-            {
-                push(@buffer, ' ' x ($maxKeyLength + 2) . "  $line");
-            }
+            push(@buffer, 
+                "$key:",
+                 map { ' ' x ($maxKeyLength + 2) . "  $_" } @valueLines);
         }
     }
+
     return @buffer;
 }
 
@@ -269,18 +246,20 @@ sub _formatCell
     
     if (ref($cell) && ref($cell) =~ /SCALAR/)
     {
-        return (uc(${$cell}));
+        return (uc ${$cell});
     }
-    else
-    {
-        return $self->_format($cell);
-    }
+   
+    return $self->_format($cell);
 }
 
 sub _leftAlign
 {
-    my ($text, $width) = @_;
-    
+    my ($text, $width) = @_;    
+    if ($width <= length $text)
+    {
+        return $text;
+    }
+
     return $text . (' ' x ($width - length($text))); 
 }
 
@@ -288,9 +267,15 @@ sub _centreAlign
 {
     my ($text, $width) = @_;
     
-    my $sideSpaces = ' ' x (($width - length($text)) / 2);
-    
-    return $sideSpaces . $text . $sideSpaces;
+    my $lengthDiff = $width - length($text);
+    if ($lengthDiff <= 0)
+    {
+        return $text;
+    }
+
+    my $leftMargin = ' ' x ($lengthDiff / 2);
+    my $rightMargin = ' ' x ($lengthDiff - int($lengthDiff / 2));
+    return $leftMargin . $text . $rightMargin;
 }
 
 sub _underline
@@ -303,7 +288,11 @@ sub _underline
 sub _rightAlign
 {
     my ($text, $width) = @_;
-    
+    if ($width <= length $text)
+    {
+        return $text;
+    }
+
     return  (' ' x ($width - length($text))) . $text; 
 }
 
@@ -311,23 +300,12 @@ sub _box
 {
     my ($vertChar, $horizChar, @lines) = @_;
     
-    # Determine the width of the whole block of text
-    my $width;
-    foreach my $line (@lines)
-    {
-        if (!$width || length($line) > $width)
-        {
-            $width = length($line);
-        }
-    }
+    # Determine the width of the whole block of text (the length of its longest line)
+    my $width = max(map {length} @lines);
     
     # Insert the left and right side lines and, if necesary, append spaces to
     # any lines that aren't as long as the longest line
-    foreach my $i (0 .. $#lines)
-    {
-        $lines[$i] = _leftAlign($lines[$i], $width);
-        $lines[$i] = "$vertChar$lines[$i]$vertChar";
-    }
+    @lines = map {$vertChar . _leftAlign($_, $width) . $vertChar} @lines;
     
     # Add two to the width to account for the side lines
     $width += 2 * length($vertChar);
@@ -345,7 +323,7 @@ sub _box
 
 =head1 NAME
 
-Data::Formatter::Text - Perl extension for formatting data stored in scalars, hashes, and arrays into strings, definition lists, and bulletted lists, etc. 
+Data::Formatter::Text - Perl extension for formatting data stored in scalars, hashes, and arrays into strings, definition lists, and bulletted lists, etc. using plain ASCII text. 
 
 =head1 SYNOPSIS
 
@@ -452,11 +430,34 @@ For example,
 
 =back
 
+=head2 Configuration
+
+=over 4
+
+=item I<$PACKAGE>::HEADING_WIDTH
+
+The minimum width of a heading, as created by the I<heading()> method, excluding its surrounding box and measured in characters. By default, this is 50.
+
+=item I<@PACKAGE>::BULLETS
+
+An array of all the styles of bullet used for bulleted lists, in the order they are used as you move deeper into a nested list. This array must contain
+at least one element, and by default is equal to ('*', '-', '~').
+
+=item I<$PACKAGE>::COLUMN_SEPARATOR
+
+The string used to separate columns in a table and draw the vertical portions of its border.
+
+=item I<$PACKAGE>::ROW_SEPARATOR
+
+The string used to separate rows in a table and draw the horizontal portions of its border.
+
+=back
+
 =head2 Example
 
     $formatter->out('Recipes',
         {
-            "Zack's Kickin' Bannana Milkshake" =>
+            "Zack's Kickin' Banana Milkshake" =>
             [
                 ['Ingredient', 'Amount', 'Preparation'],
                 ['1% milk', '1 L',    ''],
@@ -488,7 +489,7 @@ The code above will output the text:
      |------------|-------------------------------------|-----------|
      |Peanutbutter|Enough to cover inner face of slice 2|           |
      ----------------------------------------------------------------
- Zack's Kickin' Bannana Milkshake:
+ Zack's Kickin' Banana Milkshake:
      --------------------------------------------------------------
      |Ingredient  |Amount      |Preparation                       |
      |------------|------------|----------------------------------|

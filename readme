@@ -1,4 +1,4 @@
-Data-Formatter-Text version 0.01
+Data-Formatter-Text version 0.02
 ================================
 
 This module that converts Perl data structures into formatted text,
@@ -20,6 +20,7 @@ This module requires these other modules and libraries:
 
  Attribute::Abstract
  Scalar::Util
+ List::Util
  List::MoreUtils
  Roman	
 

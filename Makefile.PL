@@ -8,6 +8,7 @@ WriteMakefile(
     PREREQ_PM         => {
 		"Attribute::Abstract" => 0,
 		"Scalar::Util" => 0,
+		"List::Util" => 0,
 		"List::MoreUtils" => 0,
 		"Roman" => 0,	
 	},
