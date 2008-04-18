@@ -5,7 +5,7 @@ use warnings;
 use List::Util qw(max);
 use Roman;
 
-our $VERSION = 0.2;
+our $VERSION = 0.3;
 use base qw(Data::Formatter);
 
 ######################################
@@ -336,42 +336,42 @@ Data::Formatter::Text - Perl extension for formatting data stored in scalars, ha
   $text->out('The following foods are tasty:',
              ['Pizza', 'Pumpkin pie', 'Sweet-n-sour Pork']);
 
-   # Outputs,
-   #
-   # The following foods are tasty:
-   #  * Pizza
-   #  * Pumpkin pie
-   #  * Sweet-n-sour Pork
-   #
+  # Outputs,
+  #
+  # The following foods are tasty:
+  #  * Pizza
+  #  * Pumpkin pie
+  #  * Sweet-n-sour Pork
+  #
 
-  $text->out('Do these things to eat an orange:'
-             \['Peal it', 'Split it', 'Eat it']);
+  $text->out('Do these things to eat an orange:',
+            \['Peal it', 'Split it', 'Eat it']);
 
-   # Outputs,
-   #
-   # Do these things to eat an orange: 
-   #  1. Peal it 
-   #  2. Split it 
-   #  3. Eat it 
-   #
+  # Outputs,
+  #
+  # Do these things to eat an orange: 
+  #  1. Peal it 
+  #  2. Split it 
+  #  3. Eat it 
+  #
 
   # If you don't need to output to a file, you can also use the format() class method
   # instead of the out() instance method.
   my $nums = Data::Formatter::Text->format(
-       'Phone numbers
-        { 
-            Pat => '123-4567',
-            Joe => '999-9999',
-            Xenu => '000-0000',
-        }); 
+      'Phone numbers' =>
+       { 
+           Pat => '123-4567',
+           Joe => '999-9999',
+           Xenu => '000-0000',
+       }); 
 		 
-   # Stores in $nums:
-   #
-   # Phone numbers 
-   # Joe:  999-9999
-   # Pat:  123-4567
-   # Xenu: 000-0000
-   #
+  # Stores in $nums:
+  #
+  # Phone numbers 
+  # Joe:  999-9999
+  # Pat:  123-4567
+  # Xenu: 000-0000
+  #
 
 =head1 DESCRIPTION
 

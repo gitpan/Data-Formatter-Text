@@ -1,5 +1,8 @@
 Revision history for Perl extension Data::Formatter::Text.
 
+0.03  Fri Apr 18 15:30:00 2008
+    - Fixed a typo in the documentation that was kindly pointed out by 
+	user "skim".
 
 0.02  Wed Feb 06 15:45:00 2008
     - Enhanced documentation and added some tests. Also exposed some configuration variables.
