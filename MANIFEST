@@ -1,6 +1,8 @@
 Changes
 Makefile.PL
-manifest
-readme
+MANIFEST
+META.yml
+README
 t/Data-Formatter-Text.t
 lib/Data/Formatter/Text.pm
+script/dir_listing.pl

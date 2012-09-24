@@ -5,7 +5,7 @@ use warnings;
 use List::Util qw(max);
 use Roman;
 
-our $VERSION = 0.3;
+our $VERSION = 0.4;
 use base qw(Data::Formatter);
 
 ######################################
@@ -457,15 +457,6 @@ The string used to separate rows in a table and draw the horizontal portions of 
 
     $formatter->out('Recipes',
         {
-            "Zack's Kickin' Banana Milkshake" =>
-            [
-                ['Ingredient', 'Amount', 'Preparation'],
-                ['1% milk', '1 L',    ''],
-                ['Ripe Banana', '2 peeled', \['Peel bananas', 'Chop into quarters for blender']],
-                ['Organic eggs', '1 whole', \['Crack', 'Pour']],
-                ['Wheat germ', '1 tablespoon', ''],
-                ['Honey', 'To taste', 'Mix it in well!'],
-            ],
             "Peanutbutter and Jam Sandwich" =>
             [
                 ['Ingredient', 'Amount', 'Preparation'],
@@ -489,33 +480,12 @@ The code above will output the text:
      |------------|-------------------------------------|-----------|
      |Peanutbutter|Enough to cover inner face of slice 2|           |
      ----------------------------------------------------------------
- Zack's Kickin' Banana Milkshake:
-     --------------------------------------------------------------
-     |Ingredient  |Amount      |Preparation                       |
-     |------------|------------|----------------------------------|
-     |1% milk     |1 L         |                                  |
-     |------------|------------|----------------------------------|
-     |Ripe Banana |2 peeled    |1.  Peel bananas                  |
-     |            |            |2.  Chop into quarters for blender|
-     |------------|------------|----------------------------------|
-     |Organic eggs|1 whole     |1.  Crack                         |
-     |            |            |2.  Pour                          |
-     |------------|------------|----------------------------------|
-     |Wheat germ  |1 tablespoon|                                  |
-     |------------|------------|----------------------------------|
-     |Honey       |To taste    |Mix it in well!                   |
-     --------------------------------------------------------------
 
 Note that the order of elements in a hash is not necessarily the same as the order the elements are printed in; instead, hash elements are sorted alphabetically by their keys before being output.
 
-
-=head1 SEE ALSO
-
-Data::Formatter::Html - A compatible module that outputs formatted information using HTML, rather than plain text.
-
 =head1 AUTHOR
 
-Zachary Blair, E<lt>zack_blair@hotmail.comE<gt>
+Zachary Blair, E<lt>zblair@cpan.orgE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
