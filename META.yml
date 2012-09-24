@@ -1,6 +1,6 @@
 ---
 name: Data-Formatter-Text
-version: 0.04
+version: 1.0
 author: ["Zachary Blair <zblair@cpan.org>"]
 abstract: 'Formats data stored in scalars, hashes, and arrays into strings, definition lists, bulletted lists, and tables.'
 license: perl
@@ -26,7 +26,7 @@ no_index:
 provides:
   Data::Formatter::Text:
     file: lib/Data/Formatter/Text.pm
-    version: 0.04
+    version: 1.0
 keywords:
   - serialization
   - list

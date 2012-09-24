@@ -1,4 +1,4 @@
-Data-Formatter-Text version 0.04
+Data-Formatter-Text version 1.0
 ================================
 
 This module that converts Perl data structures into formatted text,

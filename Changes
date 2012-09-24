@@ -1,6 +1,6 @@
 Revision history for Perl extension Data::Formatter::Text.
 
-0.04  Sun Sept 23 11:30:00 2012
+1.0  Sun Sept 23 11:30:00 2012
     - Added META.yml and an example script, dir_listing.pl
 
 0.03  Fri Apr 18 15:30:00 2008

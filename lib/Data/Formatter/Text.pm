@@ -5,7 +5,7 @@ use warnings;
 use List::Util qw(max);
 use Roman;
 
-our $VERSION = 0.4;
+our $VERSION = 1.0;
 use base qw(Data::Formatter);
 
 ######################################
